@@ -9,6 +9,7 @@ __author__="xuehao"
 例如，主键id的缺省值是函数next_id，创建时间created_at的缺省值是函数time.time，可以自动设置当前日期和时间。
 
 日期和时间用float类型存储在数据库中，而不是datetime类型，这么做的好处是不必关心数据库的时区以及时区转换问题，排序非常简单，显示的时候，只需要做一个float到str的转换，也非常容易。
+
 '''
 
 import time,uuid
@@ -38,7 +39,7 @@ class Blog(Model):
 	name=StringField(ddl='varchar(50)')
 	summary=StringField(ddl='varchar(200)')
 	content=TextField()
-	create_at(FloatField(default=time.time))
+	create_at=(FloatField(default=time.time))
 
 class Comment(Model):
 	__table__='comments'

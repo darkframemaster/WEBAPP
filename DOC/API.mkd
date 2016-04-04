@@ -1,0 +1,64 @@
+##orm.py
+###class Model
+####def findNumber(cls,selectField,where=None,args=None):(@asyncio.coroutine,@classmethod)
+* find number by select and where
+* cls:类名
+* selectField:select的属性
+* where:where='where attrt=xxxx'
+* args:属性参数
+
+####def findAll(cls,where=None,args=None,**kw):(@asyncio.coroutine,@classmethod)
+* cls:类方法的self
+* where:sql where
+* args:参数
+* **kw:你想指定的sql参数{orderBy:way...}
+		
+####def  find(cls,pk):(@asyncio.coroutine,@classmethod)
+* cls：类名
+* pk:primary_key
+
+####def save(self):(@asyncio.coroutine)
+* 存储一个实例
+####def update(self):(@asyncio.coroutine)
+* 更新一个实例
+####def remove(self):(@asyncio.coroutine)		
+* 删除一个实例
+
+
+##app.py
+###def init_jinja2(app,**kw):
+* 为app添加html模板loader.
+* app:web.Application.
+* **kw:字典参数.filters等等
+
+###middleware 拦截函数 middleware是一种拦截器，一个URL在被某个函数处理前，可以经过一系列的middleware的处理。
+###def logger_factory(app,handler):(@asyncio.coroutine)
+* app:web.Application.
+* handler:func
+* return func.
+
+###def data_factory(app,handler):(@asyncio.coroutine)
+###def auth_factory(app,handler):(@asyncio.coroutine)
+###def response_factory(app,handler):(@asyncio.coroutine)
+
+###def datetime_filter(t):
+* return a string of time
+
+##webFrame.py
+###def get(path):(@decorator):
+###def post(path):(@decorator):
+###def add_static(app):
+* 导入`/static/`
+* app:web.Application
+
+###def add_route(app,fn):
+* 注册URL处理函数,
+* app:web.Application
+* fn:func
+
+###def add_routes(app,module_name):
+* 传入一个py模块，导入模块中的所有url注册函数
+* app:web.Application
+* module_name:string
+
+###class RequestHandler(object):

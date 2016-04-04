@@ -6,6 +6,7 @@ __author__='xuehao'
 
 import asyncio,logging
 import aiomysql
+import pdb
 
 def log(sql,args=()):
 	logging.info('SQL:%s'% sql)
@@ -14,13 +15,14 @@ def log(sql,args=()):
 	创建连接池
 	每个HTTP请求都可以从连接池中直接获取数据库连接。使用连接池的好处是不必频繁地打开和关闭数据库连接，而是能复用就尽量复用。
 	连接池由全局变量__pool存储，缺省情况下将编码设置为utf8，自动提交事务	
+
 '''
 @asyncio.coroutine
 def create_pool(loop,**kw):
 	logging.info('create database connection pool...')
-	global _pool
+	global __pool
 	#connect to the db and return the value to _pool
-	_pool=yield from aiomysql.create_pool(
+	__pool=yield from aiomysql.create_pool(
 		host=kw.get('host','localhost'),
 		port=kw.get('port',3306),
 		user=kw['user'],
@@ -43,8 +45,8 @@ def create_pool(loop,**kw):
 @asyncio.coroutine
 def select(sql,args,size=None):
 	log(sql,args)
-	global _pool
-	with (yield from _pool) as conn:
+	global __pool
+	with (yield from __pool) as conn:
 		cur=yield from conn.cursor(aiomysql.DictCursor)
 		yield from cur.execute(sql.replace('?','%s'),args or ())
 		if size:
@@ -63,7 +65,7 @@ def select(sql,args,size=None):
 @asyncio.coroutine
 def execute(sql,args,autocommit=True):
 	log(sql)
-	with (yield from _pool) as conn:
+	with (yield from __pool) as conn:
 		if not autocommit:
 			yield from conn.begin()
 		try:
@@ -164,9 +166,11 @@ class ModelMetaclass(type):
 	'''	cls 	1.当前准备创建的类的对像
 		name	2.类的名字
 		bases	3.类继承的父类集合
-		attrs	4.类的方法集合'''
+		attrs	4.类的属性集合在代码中(attrs,type)==>(k,v)'''
 
 	def __new__(cls,name,bases,attrs):
+		#print('-------------------Metaclass-----------------')
+		#print(cls.__name__,'----------->',name)
 		#排除Model类
 		if name=='Model':
 			return type.__new__(cls,name,bases,attrs)
@@ -175,9 +179,11 @@ class ModelMetaclass(type):
 		logging.info('found model:%s (table:%s)'% (name,tableName))
 		#获取所有的Field和主键名
 		mappings=dict()	#映射
-		fields=[]		#属性
+		fields=[]	#属性
 		primaryKey=None	#主键
+		#print('--------------------attrs------------------')
 		for k,v in attrs.items():
+			#print('found mapping:%s==>%s'% (k,v))
 			#判断v是不是Field类型	
 			if isinstance(v,Field):
 				logging.info('found mapping:%s==>%s'% (k,v))
@@ -189,6 +195,7 @@ class ModelMetaclass(type):
 					primaryKey=k
 				else:
 					fields.append(k)
+		#print('\n')
 		if not primaryKey:
 			raise RuntimeError('Primary key not found.')
 		for k in mappings.keys():
@@ -203,10 +210,13 @@ class ModelMetaclass(type):
 		
 		# 构造默认的SELECT, INSERT, UPDATE和DELETE语句:
 		#char.join(string)	用char将string分割
-		#select 
+		#select attrs from `tablename`
 		attrs['__select__']='select `%s`,%s from `%s`'%(primaryKey,','.join(escaped_fields),tableName)
+		#insert into tablename (attrs)values(?,?...)
 		attrs['__insert__']='insert into `%s` (%s,`%s`)values(%s)'%(tableName,','.join(escaped_fields),primaryKey,create_args_string(len(escaped_fields)+1))
+		#update `tablename` set attrs=? where primaryKey=? 
 		attrs['__update__']='update `%s` set %s where `%s`=?'%(tableName,','.join(map(lambda f:'`%s`=?'%(mappings.get(f).name or f),fields)),primaryKey)
+		#delete from `tablename` where `primaryKey`=?
 		attrs['__delete__']='delete from `%s` where `%s`=?'%(tableName,primaryKey)
 		return type.__new__(cls,name,bases,attrs)	
 
@@ -217,6 +227,9 @@ class ModelMetaclass(type):
 	Model:ORM映射基类
 
 '''
+'''
+		封装数据库的调用方法，用参数拼sql语句并执行
+'''
 class Model(dict,metaclass=ModelMetaclass):
 	def __init__(self,**kw):
 		super(Model,self).__init__(**kw)
@@ -225,10 +238,10 @@ class Model(dict,metaclass=ModelMetaclass):
 		try:
 			return self[key]
 		except KeyError:
-			raise Attribute(r"'Model' object has no attribute '%s'"% key)
+			raise AttributeError(r"'Model' object has no attribute '%s'"% key)
 	
 	def __setattr__(self,key,value):
-		self[key]==value
+		self[key]=value
 	
 	def getValue(self,key):
 		return getattr(self,key,None)
@@ -243,13 +256,16 @@ class Model(dict,metaclass=ModelMetaclass):
 				setattr(self,key,value)
 		return value
 	
-# --------------------------每个Model类的子类实例应该具备的执行SQL的方法比如save------
-	'''
-		封装数据库的调用方法，用参数拼sql语句并执行
-	'''	
+#---每个Model类的子类实例应该具备的执行SQL的方法比如save---	
 	@classmethod	#类方法
 	@asyncio.coroutine
 	def findAll(cls,where=None,args=None,**kw):
+		'''
+			cls:类方法的self
+			where:sql where
+			args:参数
+			**kw:你想指定的sql参数{orderBy:way...}
+		'''
 		sql=[cls.__select__]	
 		if where:
 			sql.append('where')
@@ -277,7 +293,12 @@ class Model(dict,metaclass=ModelMetaclass):
 	@classmethod	#类方法	
 	@asyncio.coroutine
 	def findNumber(cls,selectField,where=None,args=None):
-		'''find number by select and where'''
+		'''find number by select and where
+			cls:类名
+			selectField:select的属性
+			where:where='where attrt=xxxx'
+			args:属性参数
+		'''
 		sql=['select %s _num_ from `%s`'% (selectField,cls.__table__)]
 		if where:
 			sql.append('where')
@@ -290,13 +311,17 @@ class Model(dict,metaclass=ModelMetaclass):
 	@classmethod
 	@asyncio.coroutine
 	def  find(cls,pk):
+		'''
+			cls：类名
+			pk:primary_key
+		'''
 		'find object by primary_key'
 		rs=yield from select('%s where `%s`=?'% (cls.__select__,cls.__primary_key__),[pk],1)
 		if len(rs)==0:
 			return None
 		return cls(**rs[0])
 
-	@classmethod
+	#实例方法
 	@asyncio.coroutine
 	def save(self):
 		args=list(map(self.getValueOrDefault,self.__fields__))
@@ -305,20 +330,19 @@ class Model(dict,metaclass=ModelMetaclass):
 		if rows !=1:
 			logging.warn('failed to insert record:affected rows:%s'% rows)
 
-	@classmethod
 	@asyncio.coroutine
 	def update(self):
 		args=list(map(self.getValue,self.__fields__))
 		args.append(self.getValue(self.__primary_key__))
 		rows=yield from execute(self.__update__,args)
+		print(self.__update__,args)
 		if rows !=1:
 			logging.warn('failed to update by primary key:affected rows %s'% rows)
 	
-	@classmethod
 	@asyncio.coroutine
 	def remove(self):
 		args=[self.getValue(self.__primary_key__)]
-		rows=yield from execute(self.__delete,args)
+		rows=yield from execute(self.__delete__,args)
 		if rows!=1:
 			logging.warn('failed to remove by primary  key:affected rows %s'% rows)
 
