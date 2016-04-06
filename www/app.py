@@ -5,7 +5,7 @@ __author__='xuehao'
 
 
 '''
-	web app建立在asyncio上
+	web app建立在asyncio上,
 	这是用aiohttp写的一个基本的app.py
 '''
 
@@ -19,7 +19,7 @@ from config import configs
 
 import orm
 from webFrame import add_routes,add_static
-#from handlers import cookie2user,COOKIE_NAME
+from handlers import cookie2user,COOKIE_NAME
 
 
 '''
@@ -97,7 +97,7 @@ def auth_factory(app,handler):
 			if user:
 				logging.info('set current user:%s'% user.email)
 				request.__user__=user
-		if request.path.startswith('/manage/')and(request.__user__ is None or not request.__user__.admin):
+		if request.path.startswith('/manage/')and(request.__user__ is None or request.__user__.admin):
 			return web.HTTPFound('/signin')
 		return (yield from handler(request))
 	return auth
@@ -143,10 +143,10 @@ def response_factory(app,handler):
 	return response
 
 '''
-	jinja中使用的filter，init中调用
+	jinja中使用的filter
 '''
 def datetime_filter(t):
-	delta=int(time.time()-t)
+	delta=int(time.time() - t)
 	if delta<60:
 		return u'1分钟前'
 	if delta<3600:
@@ -172,7 +172,7 @@ def init(loop):
         	assert asyncio.iscoroutinefunction(factory), factory
         self._middlewares = list(middlewares)
 	'''
-	app=web.Application(loop=loop,middlewares=[logger_factory,response_factory])#,auth_factory
+	app=web.Application(loop=loop,middlewares=[logger_factory,auth_factory,response_factory])
 	#jinja2 input html template loader
 	init_jinja2(app,filters=dict(datetime=datetime_filter))
 	#use the FUNC in webFrame to add the html files

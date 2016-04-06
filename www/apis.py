@@ -32,16 +32,16 @@ class APIResourceNotFoundError(APIError):
 
     """docstring for APIResourceNotFoundError"""
 
-    def __init__(self, arg):
+    def __init__(self, field, message=''):
         super(APIResourceNotFoundError, self).__init__(
             'value:notfound', field, message)
 
 
-class APIPermissionError(object):
+class APIPermissionError(APIError):
 
     """docstring for APIPermissionError"""
 
-    def __init__(self, arg):
+    def __init__(self, message=''):
         super(APIPermissionError, self).__init__(
             'permission:forbidden', 'permission', message)
 

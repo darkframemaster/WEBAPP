@@ -135,11 +135,7 @@ class RequestHandler(object):
 
 		self._named_kw_args=get_named_kw_args(fn)
 		self._required_kw_args=get_required_kw_args(fn)
-		print('------------_has_request_arg:%s'%self._has_request_arg)
-		params=inspect.signature(fn).parameters
-		for name,param in params.items():
-			print('-------type-------:',param.kind)
-	
+
 	'''
 		__call__
 		* kw保存参数

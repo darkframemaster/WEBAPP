@@ -68,7 +68,7 @@ def h():
 c=h()
 c.next()
 c.send('Fighting!')
-'''
+```
 
 看到结果相信大家都知道了,`send('Fighting')`把`'Fighting!'`传给了`yield`，然后继续输出直到下一个yield。没错，`send()`就像一个有参数的`next()。
 
