@@ -83,7 +83,7 @@ def text2html(text):
 #url处理函数,get('/')添加path and method
 @get('/')
 @asyncio.coroutine
-def index(*,page='1'):
+def index(*,page='1',request):
 	page_index=get_page_index(page)
 	num=yield from Blog.findNumber('count(id)')
 	page=Page(num)
@@ -93,21 +93,24 @@ def index(*,page='1'):
 		blogs=yield from Blog.findAll(orderBy='create_at desc',limit=(page.offset,page.limit))
 	return {
         '__template__': 'blogs.html',
+	'__user__':request.__user__,
         'blogs': blogs,
 	'page':page
     }
 
 #注册页面
 @get('/register')
-def register():
+def register(request):
 	return{
+		'__user__':request.__user__,
 		'__template__':'register.html'	
 	}
 
 #登录页面
 @get('/signin')
-def signin():
+def signin(request):
 	return{
+		'__user__':request.__user__,
 		'__template__':'signin.html'
 	}
 
@@ -122,7 +125,7 @@ def signout(request):
 
 #blog页面
 @get('/blog/{id}')
-def get_blog(id):
+def get_blog(id,request):
 	blog=yield from Blog.find(id)
 	comments=yield from Comment.findAll('blog_id=?',[id],orderBy='create_at desc')
 	for c in comments:
@@ -131,6 +134,7 @@ def get_blog(id):
 	return {
 	'__template__':'blog.html',
 	'blog':blog,
+	'__user__':request.__user__,
 	'comments':comments
 	}
 
@@ -144,42 +148,47 @@ def manage():
 	return 'redirect:/manage/comments'
 
 @get('/manage/comments')
-def manage_comments(*,page='1'):
+def manage_comments(*,page='1',request):
 	return {
 	'__template__':'manage_comments.html',
+	'__user__':request.__user__,
 	'page_index':get_page_index(page)
 	}
 
 #blog 列表
 @get('/manage/blogs')
-def manage_blogs(*,page='1'):
+def manage_blogs(*,page='1',request):
 	return {
 	'__template__':'manage_blogs.html',
+	'__user__':request.__user__,
 	'page_index':get_page_index(page)
 	}
 
 #create blog页面
 @get('/manage/blogs/create')
-def manage_create_blog():
+def manage_create_blog(request):
 	return {
 	'__template__':'manage_blog_edit.html',
+	'__user__':request.__user__,
 	'id':'',
 	'action':'/api/blogs'
 	}
 
 #编辑页面
 @get('/manage/blogs/edit')
-def manage_edit_blog(*,id):
+def manage_edit_blog(*,id,request):
 	return{
 	'__template__':'manage_blog_edit.html',
+	'__user__':request.__user__,
 	'id':id,
 	'action':'/api/blogs/%s'%id	
 	}
 
 @get('/manage/users')
-def manage_users(*,page='1'):
+def manage_users(*,page='1',request):
 	return{
 	'__template__':'manage_users.html',
+	'__user__':request.__user__,
 	'page_index':get_page_index(page)
 	}
 

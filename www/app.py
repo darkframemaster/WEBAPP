@@ -187,7 +187,8 @@ def init(loop):
 '''
 # 响应处理
 # 总结下来一个请求在服务端收到后的方法调用顺序是:
-#     	logger_factory->response_factory->RequestHandler().__call__->get或post->handlers
+#     	request->logger_factory->auth_factory(cookie认证)->response_factory->RequestHandler()->注册handlers里面的方法到(这个只是一次执行)->根据方法作出响应,可以是Response可以是网页显示的信息（jijia2将返回值反馈到html中）。
+	
 # 那么结果处理的情况就是:
 #     	由handler构造出要返回的具体对象
 #     	然后在这个返回的对象上加上'__method__'和'__route__'属性，以标识别这个对象并使接下来的程序容易处理
