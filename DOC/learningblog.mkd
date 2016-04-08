@@ -1,7 +1,7 @@
 ##library:
-[for python3](https://docs.python.org/3/library/inspect.html)
-[lib for aiohttp](http://aiohttp.readthedocs.org/en/stable/web.html)
-[lib for jinja2](http://docs.jinkan.org/docs/jinja2/api.html#id1)
+[for python3](https://docs.python.org/3/library/inspect.html)<br>
+[lib for aiohttp](http://aiohttp.readthedocs.org/en/stable/web.html)<br>
+[lib for jinja2](http://docs.jinkan.org/docs/jinja2/api.html#id1)<br>
 
 ##about mysql
 `grant select,insert,update,delete on darkframexue.* to 'root'@'localhost' identified by 'xh1008'`	为数据库授权
@@ -9,38 +9,13 @@
 the attribute in db must as same as the attrs in the class in models
 
 ##about python
-###about aiohttp
-####handler
-一个request handler可以是任何一个函数（也可以是协程）只接受request作为它的参数，完了返回一个StreamResponse对象。
-
-```
-def handler(request):
-    return web.Response()
-```
-####Middleware:
-middlewares 由一系列的工厂构成，在web.Application中作为一个键值传入，一个factory就是一个执行中间逻辑的协程。aiohttp.web通过middleware提供了一个定制request handler的机制。
-
-middlewares的参数有两个，`(app,handler)`。
-
-通过在一个中间件工厂的处理程序是由上一个中间件工厂返回的处理程序。最后一个中间件工厂总是接收路由器本身选择的请求处理程序。
-
-```
-async def middleware_factory(app, handler):
-    async def middleware_handler(request):
-        return await handler(request)
-    return middleware_handler
-```
 
 ####web.Application(loop,middlewares=[factory1,factory2])
 
 
 ###about jinja2
 
-###about middlewares
-
 ###about yield 
-如果一个函数里面包含yield字段，那么这个函数已经编程了一个生成器`Generator`
-
 ```
 def h():
 	print 'Are you OK'

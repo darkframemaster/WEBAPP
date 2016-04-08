@@ -1,0 +1,101 @@
+##about aiohttp
+这里主要是服务器端的工作，简单的说就是接收`request`，经过一系列的处理，返回一个`response`。
+
+####handler
+一个request handler可以是任何一个函数（也可以是协程）只接受request作为它的参数，完了返回一个Response对象。
+
+```
+def handler(request):
+    return web.Response()
+```
+####Middleware:
+aiohttp.web通过middleware提供了一个定制request handler的机制。
+
+middlewares 由一系列的工厂构成，在`web.Application`中作为一个键值传入，一个factory就是一个执行中间逻辑的协程。
+
+middlewares-factory 的参数有两个，`(app,handler)`。
+
+通过在一个中间件工厂的处理程序是由上一个中间件工厂返回的处理程序。最后一个中间件工厂总是接收路由器本身选择的请求处理程序。
+
+```
+async def middleware_factory(app, handler):
+    async def middleware_handler(request):
+        return await handler(request)
+    return middleware_handler
+```
+
+###Working with Multipart
+`aiohttp`支持一个完善的multipart reader and writer。
+
+如果一个函数里面包含yield字段，那么这个函数已经编程了一个生成器Generator。它们都以steaming processing为中心设计，以避免在处理大量载荷时的不必要空间占用。但是这也意味着大多数的I/O设备只能执行一个单一时间。
+
+####Reading Multipart Responses
+假设你搞了一个request，想要用response处理多种数据。
+
+```
+async with aiohttp.request(...) as resp:
+    pass
+```
+
+首先你要用`MultipartReader.from_response()`封装response，这需要用`MultipartReader`隔离response和connection routines，这回让事情变得件简单。
+
+`reader = aiohttp.MultipartReader.from_response(resp)`
+
+再假设你收到一些JSON文件和多媒体文件，但你只需要其中的一个特殊的。
+
+So，你首先应该用一个循环过滤multipart body。
+
+```
+metadata = None
+filedata = None
+while True:
+    part = await reader.next()
+```
+
+`reader.next()`返回类型取决于下一个部分是什么，如果是简单的body part那么你会得到一个`BodyPartReader`类型的实体。否则，他将会是另一种`MultipartReader`类型的实体嵌套的multipart。这个multipart的格式是递归的而且支持多层嵌套。当没有更多的部分获取时，返回一个`None`，这时候就可以跳出循环啦。
+
+```
+if part is None:
+    break
+```
+
+不管是`BodyPartReader`还是`MultipartReader`都提供对body part headers的访问，这就允许你通过属性过滤the parts。
+
+```
+if part.headers[aiohttp.hdrs.CONTENT-TYPE]=='application/json':
+	metadata=awai part.json()
+	continue
+```
+
+但是没有显示的对.BodyPartReader的请求的话，不管是`BodyPartReader`还是`MultipartReader`都不能访问到完整的body part data。那么怎么请求呢？
+
+```
+BodyPartReader.text() for plain text data;
+BodyPartReader.json() for JSON;
+BodyPartReader.form() for application/www-urlform-encode
+```
+
+每个方法都会自动识别如果内容是用gzip压缩编码。或者transfer encoding是 base64 或者 quoted-printable- 这样结果会自动执行decode。但是，如果你需要访问原始的二进制数据，`BodyPartReader.read()`和`BodyPartReader.read_chunk()`方法会帮到你。
+
+当你**必须**去处理multipart files的时候（感觉这么做好像不是很好），可以使用`BodyPartReader.filename`，It’s a very smart helper which handles Content-Disposition handler right and extracts the right filename attribute from it:
+
+```
+if part.filename!='secret.txt':
+	continue
+```
+
+如果现在的part并不是你想要的，你需要continue一个循环。然后magic就发生啦，在你获取下一个body part之前，`await reader.next()`它会确保前一个部分已经被阅读过，如果没有的话，所有的内容都会以void返回然后next，所以不用cleanup routines当你还在循环中。
+
+一旦你发现了你寻找的part，读了它。
+
+`filedata=await part.read(decode=False)`
+
+然后你要decode这些数据:
+
+`filedata=part.decode(filedata)`
+
+OK之后:
+
+`break`
+
+
