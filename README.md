@@ -21,7 +21,7 @@ WEBAPP/                  <-- 根目录
 ```
 
 ### how to use.
-you shoud so some changes in `config.py` and `schema.sql` in `www/`.
+you shoud do some changes in `config.py` and `schema.sql` in `www/`.
 
 run the script `app.py` to start server ,see `readme.mkd` in `www/`.
 
