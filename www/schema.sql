@@ -3,7 +3,8 @@ create database darkframexue;
 
 use darkframexue;
 
-grant select,insert,update,delete on darkframexue.* to 'root'@'localhost' identified by 'xh1008';
+--you need change tablename ,user and password 
+grant select,insert,update,delete on tablename.* to 'user'@'localhost' identified by 'password';
 
 create table users (
     `id` varchar(50) not null,
