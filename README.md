@@ -1,6 +1,4 @@
-# WEBAPP
-A web app using python. 
-
+# pyblog
 ###about the dirs.
 ```
 WEBAPP/                  <-- 根目录
@@ -24,8 +22,3 @@ WEBAPP/                  <-- 根目录
 you shoud do some changes in `config.py` and `schema.sql` in `www/`.
 
 run the script `app.py` to start server ,see `readme.mkd` in `www/`.
-
-if you using windows you may need do some changes in code.
-
-
-
